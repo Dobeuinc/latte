@@ -28,13 +28,6 @@ Assert::exception(
 	'Cannot include parent block outside of any block.',
 );
 
-// in snippet block
-Assert::exception(
-	fn() => $latte->renderToString('{snippet foo} {include parent} {/snippet}'),
-	Latte\CompileException::class,
-	'Cannot include parent block outside of any block.',
-);
-
 
 $latte->setLoader(new Latte\Loaders\StringLoader([
 	'main1' => '{extends "parent"} {block foo}-{include parent|trim}-{/block}',
