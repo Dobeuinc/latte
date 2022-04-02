@@ -68,14 +68,16 @@ function createLatte(): Latte\Engine
 	$latte = new Latte\Engine;
 	$latte->setLoader(new Latte\Loaders\StringLoader);
 
-	if (class_exists(Nette\Bridges\CacheLatte\CacheMacro::class)) {
-		$latte->getCompiler()->addMacro('cache', new Nette\Bridges\CacheLatte\CacheMacro);
+	if (class_exists(Nette\Bridges\ApplicationLatte\UIExtension::class)) {
+		$latte->addExtension(new Nette\Bridges\ApplicationLatte\UIExtension);
 	}
-	if (class_exists(Nette\Bridges\ApplicationLatte\UIMacros::class)) {
-		Nette\Bridges\ApplicationLatte\UIMacros::install($latte->getCompiler());
+
+	if (class_exists(Nette\Bridges\CacheLatte\CacheExtension::class)) {
+		$latte->addExtension(new Nette\Bridges\CacheLatte\CacheExtension(new Nette\Caching\Storages\DevNullStorage));
 	}
-	if (class_exists(Nette\Bridges\FormsLatte\FormMacros::class)) {
-		Nette\Bridges\FormsLatte\FormMacros::install($latte->getCompiler());
+
+	if (class_exists(Nette\Bridges\FormsLatte\FormsExtension::class)) {
+		$latte->addExtension(new Nette\Bridges\FormsLatte\FormsExtension);
 	}
 
 	return $latte;
