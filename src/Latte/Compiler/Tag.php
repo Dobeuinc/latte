@@ -11,7 +11,6 @@ namespace Latte\Compiler;
 
 use Latte\CompileException;
 use Latte\Compiler\Nodes\Html\ElementNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
 use Latte\Strict;
 
 
@@ -32,10 +31,7 @@ final class Tag
 		OutputKeepIndentation = 1,
 		OutputRemoveIndentation = 2;
 
-	public MacroTokens $tokenizer;
 	public int $outputMode = self::OutputNone;
-	public ?string $modifiers = null;
-	public string $args = '';
 	public TagParser $parser;
 
 
@@ -52,12 +48,6 @@ final class Tag
 		public /*readonly*/ ?int $endLine = null,
 		public /*readonly*/ ?\stdClass $data = null,
 	) {
-		$args = '';
-		foreach ($tokens as $token) {
-			$args .= $token->text;
-		}
-
-		$this->setArgs($args);
 		$this->data ??= new \stdClass;
 		$this->parser = new TagParser($tokens);
 	}
@@ -81,24 +71,16 @@ final class Tag
 	}
 
 
-	private function setArgs(string $args): void
-	{
-		$this->args = trim($args);
-		$this->tokenizer = new MacroTokens($this->args);
-	}
-
-
 	public function getNotation(bool $withArgs = false): string
 	{
-		$args = $withArgs ? $this->args : '';
 		return $this->isNAttribute()
 			? TemplateLexer::NPrefix . ($this->prefix ? $this->prefix . '-' : '')
 				. $this->name
-				. ($args === '' ? '' : '="' . $args . '"')
+				. ($withArgs ? '="' . $this->parser->stream->getText() . '"' : '')
 			: '{'
 				. ($this->closing ? '/' : '')
-				. rtrim($this->name
-				. ($args === '' ? '' : ' ' . $args))
+				. $this->name
+				. ($withArgs ? $this->parser->stream->getText() : '')
 			. '}';
 	}
 
@@ -120,45 +102,11 @@ final class Tag
 	}
 
 
-	/**
-	 * @throws CompileException
-	 */
-	public function expectArguments(string|bool|null $arguments = true): void
+	public function expectArguments($what = 'arguments'): void
 	{
-		if ($arguments && $this->args === '') {
-			$label = is_string($arguments) ? $arguments : 'arguments';
-			throw new CompileException('Missing ' . $label . ' in ' . $this->getNotation(), $this->startLine);
-
-		} elseif ($arguments === false && $this->args !== '') {
-			throw new CompileException('Arguments are not allowed in ' . $this->getNotation(), $this->startLine);
+		if ($this->parser->isEnd()) {
+			throw new CompileException("Missing $what in " . $this->getNotation(), $this->startLine);
 		}
-	}
-
-
-	public function extractModifier(): void
-	{
-		if (preg_match('~^
-			(?<args>(?:' . TemplateLexer::ReString . '|[^\'"])*?)
-			(?<modifiers>(?<!\|)\|[a-z](?<modArgs>(?:' . TemplateLexer::ReString . '|(?:\((?P>modArgs)\))|[^\'"/()]|/(?=.))*+))?
-		$~Disx', $this->args, $match)) {
-			$this->setArgs(trim($match['args']));
-			$this->modifiers = $match['modifiers'] ?? '';
-		}
-	}
-
-
-	public function getArgs(): ?LegacyExprNode
-	{
-		if ($this->args === '') {
-			return null;
-		}
-		return new LegacyExprNode($this->tokenizer->joinAll());
-	}
-
-
-	public function getWord(): LegacyExprNode
-	{
-		return new LegacyExprNode($this->tokenizer->fetchWord());
 	}
 
 

@@ -32,3 +32,21 @@ Assert::same(' 10 - -', $latte->renderToString('main2', ['glob' => 123]));
 Assert::same(' 10 - -', $latte->renderToString('main3', ['glob' => 123]));
 Assert::same(' 10 5 -', $latte->renderToString('main4', ['glob' => 123]));
 Assert::same(' - - 123', $latte->renderToString('main5', ['glob' => 123]));
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+			Parameters:
+				Assign:
+					Variable:
+						name: b
+					Null:
+				Assign:
+					Variable:
+						name: a
+					Integer:
+						value: 5
+		Fragment:
+	XX, exportTraversing('{parameters $b, int $a = 5}'));

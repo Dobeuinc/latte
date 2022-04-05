@@ -44,8 +44,16 @@ Assert::matchFile(
 );
 
 
-$latte->setLoader(new Latte\Loaders\StringLoader);
-Assert::exception(
-	fn() => $latte->renderToString('{include file "inc", with blocks}'),
-	ParseError::class,
-);
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			IncludeFile:
+				String:
+					value: file.latte
+				Array:
+				Filter:
+					Identifier:
+						name: trim
+	XX, exportTraversing('{include file.latte with blocks|trim}'));

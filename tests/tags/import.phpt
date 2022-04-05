@@ -48,3 +48,14 @@ Assert::match(
 	'Test block',
 	trim($latte->renderToString('main-dynamic')),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+			Import:
+				Variable:
+					name: var
+		Fragment:
+	XX, exportTraversing('{import $var}'));

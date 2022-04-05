@@ -71,3 +71,15 @@ Assert::match(
 		. "\n\n\n</pre> <p>\n\n\n</p>{/spaceless}",
 	),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			Spaceless:
+				Fragment:
+					Text:
+						content: '...'
+	XX, exportTraversing('{spaceless}...{/spaceless}'));

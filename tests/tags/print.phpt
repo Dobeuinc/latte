@@ -52,7 +52,7 @@ Assert::match(
 				echo LR\Filters::escapeHtmlText($hello ? 'yes' : null) /* line 6 */;
 				echo '
 		Array: ';
-				echo LR\Filters::escapeHtmlText(($this->filters->join)($hello ? (['a', 'b', 'c']) : null)) /* line 7 */;
+				echo LR\Filters::escapeHtmlText(($this->filters->join)($hello ? ['a', 'b', 'c'] : null)) /* line 7 */;
 				echo ' ';
 				echo LR\Filters::escapeHtmlText(($this->filters->join)(['a', 'b', $hello ? 'c' : null])) /* line 7 */;
 				echo '
@@ -60,11 +60,25 @@ Assert::match(
 		filter: ';
 				echo LR\Filters::escapeHtmlText(($this->filters->lower)($hello)) /* line 9 */;
 				echo "\n";
-				echo LR\Filters::escapeHtmlText(($this->filters->lower)(($this->filters->truncate)($hello, "10"))) /* line 10 */;
+				echo LR\Filters::escapeHtmlText(($this->filters->lower)(($this->filters->truncate)($hello, '10'))) /* line 10 */;
 				echo "\n";
-				echo LR\Filters::escapeHtmlText(($this->filters->types)($hello , '' , "" , "$hello")) /* line 11 */;
+				echo LR\Filters::escapeHtmlText(($this->filters->types)($hello, '', '', "{$hello}")) /* line 11 */;
 		%A%
 		XX
 ,
 	$latte->compile($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			Print:
+				Variable:
+					name: var
+				Filter:
+					Identifier:
+						name: trim
+	XX, exportTraversing('{=$var|trim}'));

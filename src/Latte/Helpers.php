@@ -42,16 +42,6 @@ class Helpers
 	}
 
 
-	public static function removeFilter(string &$modifier, string $filter): bool
-	{
-		if ($filter === 'noescape' && preg_match('#\|noescape\s*\S#Di', $modifier)) {
-			trigger_error("Filter |noescape should be placed at the very end in '$modifier'", E_USER_DEPRECATED);
-		}
-		$modifier = preg_replace('#\|(' . $filter . ')\s?(?=\||$)#Di', '', $modifier, -1, $found);
-		return (bool) $found;
-	}
-
-
 	/** intentionally without callable typehint, because it generates bad error messages */
 	public static function toReflection($callable): \ReflectionFunctionAbstract
 	{
@@ -64,11 +54,5 @@ class Helpers
 		} else {
 			return new \ReflectionFunction($callable);
 		}
-	}
-
-
-	public static function isNameDynamic($name): bool
-	{
-		return str_contains($name, '$') || str_contains($name, ' ');
 	}
 }

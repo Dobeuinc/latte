@@ -18,7 +18,7 @@ function formatArgs(string $str)
 	if (!$parser->isEnd()) {
 		$parser->stream->throwUnexpectedException();
 	}
-	return substr($node->print(new PrintContext), 1, -1);
+	return (new PrintContext)->format('%args', $node);
 }
 
 

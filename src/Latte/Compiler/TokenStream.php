@@ -137,6 +137,24 @@ final class TokenStream
 
 
 	/**
+	 * Returns the text of all tokens in the stream.
+	 */
+	public function getText(int $start = 0, int $end = PHP_INT_MAX, bool $advance = false): string
+	{
+		$text = '';
+		while ($start++ <= $end && ($token = $this->peek($start - $this->index - 1))) {
+			$text .= $token->text;
+		}
+
+		if ($advance) {
+			$this->index += $start - 1;
+		}
+
+		return $text;
+	}
+
+
+	/**
 	 * @throws CompileException
 	 * @return never
 	 */

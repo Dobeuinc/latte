@@ -12,11 +12,11 @@ namespace Latte\Essential\Nodes;
 use Latte\Compiler\Nodes\AreaNode;
 use Latte\Compiler\Nodes\FragmentNode;
 use Latte\Compiler\Nodes\NopNode;
+use Latte\Compiler\Nodes\Php\Expression\FilterNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\Nodes\TextNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
-use Latte\Helpers;
 
 
 /**
@@ -25,22 +25,19 @@ use Latte\Helpers;
 class TranslateNode extends StatementNode
 {
 	public AreaNode $content;
-	public ?string $filter;
+	public ?FilterNode $filter;
 
 
 	/** @return \Generator<int, ?array, array{AreaNode, ?Tag}, static|NopNode> */
 	public static function create(Tag $tag): \Generator
 	{
 		$tag->outputMode = $tag::OutputKeepIndentation;
-		$tag->extractModifier();
 
 		$node = new static;
-		$node->filter = $tag->modifiers;
-
+		$node->filter = $tag->parser->parseFilters();
 		if ($tag->void) {
 			return new NopNode;
 		}
-
 		[$node->content] = yield;
 		return $node;
 	}
@@ -48,12 +45,9 @@ class TranslateNode extends StatementNode
 
 	public function print(PrintContext $context): string
 	{
-		$filter = $this->filter;
-		if (Helpers::removeFilter($filter, 'noescape')) {
-			$context->checkFilterIsAllowed('noescape');
-		} else {
-			$filter .= '|escape';
-		}
+		$filter = (string) $this->filter?->name === 'noescape'
+			? $this->filter->inner
+			: FilterNode::escapeFilter($this->filter);
 
 		if (
 			$this->content instanceof FragmentNode
@@ -94,5 +88,8 @@ class TranslateNode extends StatementNode
 	public function &getIterator(): \Generator
 	{
 		yield $this->content;
+		if ($this->filter) {
+			yield $this->filter;
+		}
 	}
 }

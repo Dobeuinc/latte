@@ -37,3 +37,25 @@ Assert::matchFile(
 	__DIR__ . '/expected/include.inc3.phtml',
 	file_get_contents($latte->getCacheFile(__DIR__ . strtr('/templates/include3.latte', '/', DIRECTORY_SEPARATOR))),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			IncludeFile:
+				String:
+					value: file.latte
+				Array:
+					ArrayItem:
+						String:
+							value: var
+						Integer:
+							value: 1
+				Filter:
+					Identifier:
+						name: trim
+			Text:
+				content: ' '
+	XX, exportTraversing('{include file.latte, var => 1|trim} '));

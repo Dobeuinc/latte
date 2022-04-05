@@ -27,3 +27,14 @@ Assert::exception(
 );
 
 Assert::noError(fn() => $latte->compile('{templateType stdClass}'));
+
+
+// traversing
+$latte->addExtension($extension = new DumpExtension);
+$latte->compile('{templateType stdClass}');
+Assert::match(<<<'XX'
+Template:
+	Fragment:
+		TemplateType:
+	Fragment:
+XX, $extension->export());

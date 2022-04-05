@@ -42,7 +42,7 @@ Assert::match(
 Assert::exception(
 	fn() => $latte->compile('<script>"{=123|noescape}"'),
 	Latte\CompileException::class,
-	'Do not place {= 123|noescape} inside quotes in JavaScript.',
+	'Do not place {=123|noescape} inside quotes in JavaScript.',
 );
 
 Assert::match(
@@ -53,13 +53,13 @@ Assert::match(
 Assert::exception(
 	fn() => $latte->compile('<script> "{$var}" </script>'),
 	Latte\CompileException::class,
-	'Do not place {= $var} inside quotes in JavaScript.',
+	'Do not place {=$var} inside quotes in JavaScript.',
 );
 
 Assert::exception(
 	fn() => $latte->compile("<script> '{\$var}' </script>"),
 	Latte\CompileException::class,
-	'Do not place {= $var} inside quotes in JavaScript.',
+	'Do not place {=$var} inside quotes in JavaScript.',
 );
 
 Assert::match(

@@ -23,19 +23,19 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('{varType type}'),
 	Latte\CompileException::class,
-	'Unexpected content%a%',
+	'Unexpected end, expecting variable (at column 10)',
 );
 
 Assert::exception(
 	fn() => $latte->compile('{varType type var}'),
 	Latte\CompileException::class,
-	'Unexpected content%a%',
+	'Unexpected end, expecting variable (at column 15)',
 );
 
 Assert::exception(
 	fn() => $latte->compile('{varType $var type}'),
 	Latte\CompileException::class,
-	'Unexpected content%a%',
+	"Unexpected 'type', expecting end of tag in {varType} (at column 15)",
 );
 
 Assert::noError(fn() => $latte->compile('{varType type $var}'));
@@ -45,3 +45,13 @@ Assert::noError(fn() => $latte->compile('{varType ?\Nm\Class $var}'));
 Assert::noError(fn() => $latte->compile('{varType int|null $var}'));
 
 Assert::noError(fn() => $latte->compile('{varType array{0: int, 1: int} $var}'));
+
+
+// traversing
+$latte = new Latte\Engine;
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+			VarType:
+		Fragment:
+	XX, exportTraversing('{varType int $int}'));

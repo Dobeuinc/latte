@@ -431,11 +431,13 @@ final class TemplateParserHtml
 				$toClose[] = [$res, $tag];
 
 			} elseif ($res instanceof Node) {
+				$this->parser->expectConsumed($tag);
 				$res->startLine = $res->endLine = $tag->startLine;
 				$tag->replaceNAttribute($res);
 				$this->parser->popTag();
 
 			} elseif (!$res) {
+				$this->parser->expectConsumed($tag);
 				$this->parser->popTag();
 
 			} else {
@@ -455,6 +457,7 @@ final class TemplateParserHtml
 			$node = $gen->getReturn();
 			$node->startLine = $node->endLine = $tag->startLine;
 			$this->parser->popTag();
+			$this->parser->expectConsumed($tag);
 		}
 
 		return $node;

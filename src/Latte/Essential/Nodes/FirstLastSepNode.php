@@ -11,7 +11,7 @@ namespace Latte\Essential\Nodes;
 
 use Latte\CompileException;
 use Latte\Compiler\Nodes\AreaNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\ExpressionNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -25,7 +25,7 @@ use Latte\Compiler\Tag;
 class FirstLastSepNode extends StatementNode
 {
 	public string $name;
-	public ?LegacyExprNode $width = null;
+	public ?ExpressionNode $width;
 	public AreaNode $then;
 	public ?AreaNode $else = null;
 	public ?int $elseLine = null;
@@ -40,11 +40,10 @@ class FirstLastSepNode extends StatementNode
 
 		$node = new static;
 		$node->name = $tag->name;
-		$node->width = $tag->getArgs();
+		$node->width = $tag->parser->isEnd() ? null : $tag->parser->parseExpression();
 
 		[$node->then, $nextTag] = yield ['else'];
 		if ($nextTag?->name === 'else') {
-			$nextTag->expectArguments(false);
 			$node->elseLine = $nextTag->startLine;
 			[$node->else] = yield;
 		}

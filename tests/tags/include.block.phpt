@@ -70,3 +70,23 @@ Assert::match(
 	' before block 2 after',
 	$latte->renderToString('main9'),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			IncludeBlock:
+				String:
+					value: block
+				Array:
+					ArrayItem:
+						String:
+							value: var
+						Integer:
+							value: 1
+				Filter:
+					Identifier:
+						name: trim
+	XX, exportTraversing('{include block, var => 1|trim}'));

@@ -23,7 +23,7 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('{breakIf}'),
 	Latte\CompileException::class,
-	'Missing condition in {breakIf}',
+	'Missing arguments in {breakIf}',
 );
 
 Assert::noError(fn() => $latte->compile('{for ;;}{if true}{breakIf true}{/if}{/for}'));
@@ -149,3 +149,35 @@ Assert::match(
 		XX,
 	$latte->renderToString($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+			Auxiliary:
+		Fragment:
+			Foreach:
+				Variable:
+					name: a
+				Variable:
+					name: b
+				Fragment:
+					Text:
+						content: '.1.'
+					Skip:
+						Variable:
+							name: a
+					Text:
+						content: '.2.'
+					Skip:
+						Variable:
+							name: b
+					Text:
+						content: '.3.'
+					Skip:
+						Variable:
+							name: c
+					Text:
+						content: '.4.'
+	XX, exportTraversing('{foreach $a as $b}.1.{continueIf $a}.2.{breakIf $b}.3.{skipIf $c}.4.{/foreach}'));

@@ -105,3 +105,12 @@ Assert::same([
 		'args' => [],
 	],
 ], $e->getTrace());
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+			Trace:
+		Fragment:
+	XX, exportTraversing('{trace}'));

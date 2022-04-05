@@ -20,7 +20,9 @@ $template = <<<'EOD'
 	{/block}
 	EOD;
 
-Assert::match(<<<'EOD'
-		Content
-	EOD
-, $latte->renderToString($template));
+Assert::match(
+	<<<'EOD'
+			Content
+		EOD,
+	$latte->renderToString($template),
+);

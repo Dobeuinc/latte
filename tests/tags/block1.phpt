@@ -42,3 +42,22 @@ Assert::match(<<<'EOD'
 		{include main}
 		EOD,
 ));
+
+
+$latte->addExtension($extension = new DumpExtension);
+$latte->compile('{block main |trim}...{/block}');
+
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			Block:
+				String:
+					value: main
+				Filter:
+					Identifier:
+						name: trim
+				Fragment:
+					Text:
+						content: '...'
+	XX, $extension->export());

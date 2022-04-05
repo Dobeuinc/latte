@@ -38,3 +38,17 @@ Assert::matchFile(
 	__DIR__ . '/expected/while.phtml',
 	$latte->compile($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			While:
+				Integer:
+					value: 3
+				Fragment:
+					Text:
+						content: '...'
+	XX, exportTraversing('{while 3}...{/while}'));

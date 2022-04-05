@@ -14,8 +14,6 @@ use Latte\Compiler\Nodes\Php\Expression;
 use Latte\Compiler\Nodes\Php\ExpressionNode;
 use Latte\Compiler\Nodes\Php\Scalar;
 use Latte\Context;
-use Latte\Policy;
-use Latte\SecurityViolationException;
 use Latte\Strict;
 
 
@@ -27,8 +25,6 @@ final class PrintContext
 {
 	use Strict;
 
-	public ?Policy $policy;
-	public array $functions;
 	public array $paramsExtraction = [];
 	public array $blocks = [];
 
@@ -83,18 +79,64 @@ final class PrintContext
 	private ?string $subContext = null;
 
 
+	/**
+	 * Expands %line, %dump, %raw, %args, %escape(), %modify() in code.
+	 */
 	public function format(string $mask, mixed ...$args): string
 	{
-		return PhpWriter::using($this)
-			->write($mask, ...$args);
-	}
-
-
-	public function checkFilterIsAllowed(string $name): void
-	{
-		if ($this->policy && !$this->policy->isFilterAllowed($name)) {
-			throw new SecurityViolationException("Filter |$name is not allowed.");
+		if (str_contains($mask, '%modify')) {
+			$modifier = array_shift($args);
+			$mask = preg_replace_callback(
+				'#%modify(Content)?(\(([^()]*+|(?2))+\))#',
+				function ($m) use ($modifier) {
+					$var = substr($m[2], 1, -1);
+					if (!$modifier) {
+						return $var;
+					}
+					return $m[1]
+						? $modifier->printContent($this, $var)
+						: $modifier->print($this, $var);
+				},
+				$mask,
+			);
 		}
+
+		$mask = preg_replace_callback(
+			'#%escape(\(([^()]*+|(?1))+\))#',
+			fn($m) => Expression\FilterNode::escapeFilter(null)->print($this, substr($m[1], 1, -1)),
+			$mask,
+		);
+
+		$pos = 0;
+		return preg_replace_callback(
+			'#([,+]?\s*)?%(\d+\.|)(dump|raw|args|line)(\?)?(\s*\+\s*)?()#',
+			function ($m) use ($args, &$pos) {
+				[, $l, $source, $format, $cond, $r] = $m;
+				$arg = $args[$source === '' ? $pos++ : (int) $source];
+
+				switch ($format) {
+					case 'dump':
+						$code = PhpHelpers::dump($arg);
+						break;
+					case 'raw':
+					case 'args':
+						$code = $arg instanceof Node ? $arg->print($this) : (string) $arg;
+						if ($cond && ($code === '[]' || $code === '')) {
+							return $r ? $l : $r;
+						} elseif ($format === 'args' && $arg instanceof Expression\ArrayNode) {
+							$code = substr($code, 1, -1);
+						}
+						break;
+					case 'line':
+						$l = trim($l);
+						$code = $arg ? " /* line $arg */" : '';
+						break;
+				}
+
+				return $l . $code . $r;
+			},
+			$mask,
+		);
 	}
 
 
@@ -135,7 +177,7 @@ final class PrintContext
 	public function addBlock(Block $block, ?array $context = null): void
 	{
 		$block->context = implode('', $context ?? $this->getEscapingContext());
-		$block->method = 'block' . ucfirst(trim(preg_replace('#\W+#', '_', $block->name), '_'));
+		$block->method = 'block' . ucfirst(trim(preg_replace('#\W+#', '_', $block->name->print($this)), '_'));
 		$lower = strtolower($block->method);
 		$used = $this->blocks + ['block' => 1];
 		$counter = null;

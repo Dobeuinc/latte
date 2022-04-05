@@ -49,3 +49,22 @@ Assert::match(
 		XX,
 	$latte->renderToString($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+			Auxiliary:
+		Fragment:
+			Foreach:
+				Variable:
+					name: a
+				Variable:
+					name: b
+				Variable:
+					name: c
+				Fragment:
+					Text:
+						content: '...'
+	XX, exportTraversing('{foreach $a as $b => $c}...{/foreach}'));

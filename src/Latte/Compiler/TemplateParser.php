@@ -185,7 +185,7 @@ final class TemplateParser
 		}
 
 		$token = $this->stream->current();
-		$startTag = $this->pushTag($this->parseLatteTag());
+		$checkConsumed[] = $startTag = $this->pushTag($this->parseLatteTag());
 
 		$parser = $this->getTagParser($startTag->name, $token->line, $token->column);
 		$res = $parser($startTag, $this);
@@ -211,7 +211,7 @@ final class TemplateParser
 						break;
 					}
 
-					$tag = $this->parseLatteTag();
+					$checkConsumed[] = $tag = $this->parseLatteTag();
 
 					if ($startTag->outputMode === $startTag::OutputKeepIndentation) {
 						$this->lastIndentation = null;
@@ -247,6 +247,10 @@ final class TemplateParser
 
 		if (!$node instanceof Node) {
 			throw new \LogicException("Incorrect behavior of {{$startTag->name}} parser, unexpected returned value (on line $startTag->startLine)");
+		}
+
+		foreach ($checkConsumed as $tmp) {
+			$this->expectConsumed($tmp);
 		}
 
 		if ($this->location === self::LocationHead && $startTag->outputMode !== $startTag::OutputNone) {
@@ -324,20 +328,27 @@ final class TemplateParser
 		if (!$end
 			|| ($end->name !== $start->name && $end->name !== '')
 			|| !$end->closing
-			|| $end->modifiers
-			|| ($end->args !== '' && $start->args !== '' && !str_starts_with($start->args . ' ', $end->args . ' '))
+			|| $end->void
 		) {
-			$tag = $end?->getNotation($end->args !== '') ?? 'end';
+			$tag = $end?->getNotation() ?? 'end';
 			throw new CompileException("Unexpected $tag, expecting {/$start->name}", ($end ?? $start)->startLine);
+		}
+	}
+
+
+	public function expectConsumed(Tag $tag): void
+	{
+		if (!$tag->parser->isEnd()) {
+			$end = $tag->isNAttribute() ? ['end of attribute'] : ['end of tag'];
+			$tag->parser->stream->throwUnexpectedException($end, addendum: ' in ' . $tag->getNotation());
 		}
 	}
 
 
 	public function checkBlockIsUnique(Block $block): void
 	{
-		$name = $block->name;
-		if (!preg_match('#^[a-z]#iD', $name)) {
-			throw new CompileException(ucfirst($block->tag->name) . " name must start with letter a-z, '{$name}' given.", $block->tag->startLine);
+		if ($block->isDynamic() || !preg_match('#^[a-z]#iD', $name = (string) $block->name->value)) {
+			throw new CompileException(ucfirst($block->tag->name) . " name must start with letter a-z, '$name' given.", $block->tag->startLine);
 		}
 
 		if ($block->layer === Template::LayerSnippet

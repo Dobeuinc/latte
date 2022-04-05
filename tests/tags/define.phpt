@@ -35,3 +35,17 @@ Assert::matchFile(
 	__DIR__ . '/expected/define.html',
 	$latte->renderToString($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			Define:
+				String:
+					value: test
+				Fragment:
+					Text:
+						content: '...'
+	XX, exportTraversing('{define test, $a, $b = new Foo}...{/define}'));

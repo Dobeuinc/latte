@@ -43,3 +43,11 @@ Assert::matchFile(
 	__DIR__ . '/expected/syntax.html',
 	$latte->renderToString($template, ['people' => ['John', 'Mary', 'Paul']]),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+	XX, exportTraversing('{syntax double}'));

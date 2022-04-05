@@ -66,7 +66,7 @@ Assert::match(
 Assert::exception(
 	fn() => $latte->compile('<div n:ifcontent=x></div>'),
 	Latte\CompileException::class,
-	'Arguments are not allowed in n:ifcontent',
+	"Unexpected 'x', expecting end of attribute in n:ifcontent (at column 18)",
 );
 
 
@@ -119,3 +119,22 @@ Assert::match(
 		XX,
 	$latte->compile('<div class="bar" {ifset $id}id="content"{/ifset} n:ifcontent></div>'),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			IfContent:
+				Fragment:
+					Element:
+						name: p
+						Auxiliary:
+						Fragment:
+							Text:
+								content: ''
+						Fragment:
+							Text:
+								content: '...'
+	XX, exportTraversing('<p n:ifcontent>...</p>'));

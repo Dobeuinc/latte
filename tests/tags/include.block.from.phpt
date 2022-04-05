@@ -64,3 +64,25 @@ Assert::matchFile(
 	__DIR__ . '/expected/include.block.from.phtml',
 	$latte->compile('main5'),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			IncludeBlock:
+				String:
+					value: bl
+				String:
+					value: inc
+				Array:
+					ArrayItem:
+						String:
+							value: var
+						Integer:
+							value: 1
+				Filter:
+					Identifier:
+						name: trim
+	XX, exportTraversing('{include bl from inc, var => 1|trim}'));

@@ -137,3 +137,20 @@ Assert::exception(
 	Latte\RuntimeException::class,
 	'Forbidden tag <span> change to <br>.',
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			Element:
+				name: input
+				Auxiliary:
+				NTag:
+					Variable:
+						name: var
+				Fragment:
+					Text:
+						content: ''
+	XX, exportTraversing('<input n:tag="$var">'));

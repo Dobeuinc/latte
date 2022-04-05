@@ -58,3 +58,18 @@ Assert::match(
 		XX,
 	$latte->compile('{translate /}'),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			Translate:
+				Fragment:
+					Text:
+						content: '...'
+				Filter:
+					Identifier:
+						name: trim
+	XX, exportTraversing('{translate|trim}...{/translate}'));

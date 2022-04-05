@@ -9,9 +9,12 @@ declare(strict_types=1);
 
 namespace Latte\Essential\Nodes;
 
-use Latte\CompileException;
 use Latte\Compiler\Block;
 use Latte\Compiler\Nodes\AreaNode;
+use Latte\Compiler\Nodes\Php\Expression\AssignNode;
+use Latte\Compiler\Nodes\Php\Expression\FilterNode;
+use Latte\Compiler\Nodes\Php\Expression\VariableNode;
+use Latte\Compiler\Nodes\Php\Scalar;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -26,7 +29,7 @@ use Latte\Runtime\Template;
 class BlockNode extends StatementNode
 {
 	public ?Block $block = null;
-	public string $filter;
+	public ?FilterNode $filter;
 	public AreaNode $content;
 
 
@@ -34,17 +37,12 @@ class BlockNode extends StatementNode
 	public static function create(Tag $tag, TemplateParser $parser): \Generator
 	{
 		$tag->outputMode = $tag::OutputRemoveIndentation;
-		$tag->extractModifier();
-
-		[$name, $local] = $tag->tokenizer->fetchWordWithModifier('local');
-		if ($token = $tag->tokenizer->nextValue()) {
-			throw new CompileException("Unexpected arguments '$token' in " . $tag->getNotation(), $tag->startLine);
-		}
-		$name = ltrim((string) $name, '#');
+		$stream = $tag->parser->stream;
 		$node = new static;
 
-		if ($name !== '') {
-			$layer = $local ? Template::LayerLocal : $parser->blockLayer;
+		if ($stream->current() && !$stream->is('|')) {
+			[$name, $mod] = $tag->parser->parseWithModifier(['local', '#']);
+			$layer = $mod === 'local' ? Template::LayerLocal : $parser->blockLayer;
 			$node->block = new Block($name, $layer, $tag);
 
 			if (!$node->block->isDynamic()) {
@@ -53,15 +51,19 @@ class BlockNode extends StatementNode
 			}
 		}
 
-		$node->filter = $tag->modifiers;
-		[$node->content] = yield;
+		$node->filter = $tag->parser->parseFilters();
+		[$node->content, $endTag] = yield;
 
-		if ($name === '') {
-			if ($node->filter === '') {
+		if ($node->block) {
+			if ($endTag && $name instanceof Scalar\StringNode) {
+				$endTag->parser->stream->tryConsume($name->value);
+			}
+		} else {
+			if (!$node->filter) {
 				return $node->content;
 			}
 
-			$node->filter .= '|escape';
+			$node->filter = FilterNode::escapeFilter($node->filter);
 		}
 
 		return $node;
@@ -104,15 +106,16 @@ class BlockNode extends StatementNode
 
 	private function printStatic(PrintContext $context): string
 	{
-		$context->addBlock($this->block, $this->adjustContext($context->getEscapingContext()));
+		[$escapingContext, $filter] = $this->adjustContext($context->getEscapingContext());
+		$context->addBlock($this->block, $escapingContext);
 		$this->block->content = $this->content->print($context); // must be compiled after is added
 
 		return $context->format(
-			'$this->renderBlock(%dump, get_defined_vars()'
-			. ($this->filter
+			'$this->renderBlock(%raw, get_defined_vars()'
+			. ($filter
 				? $context->format(
 					', function ($s, $type) { $ʟ_fi = new LR\FilterInfo($type); return %modifyContent($s); }',
-					$this->filter,
+					$filter,
 				)
 				: '')
 			. ') %line;',
@@ -124,21 +127,21 @@ class BlockNode extends StatementNode
 
 	private function printDynamic(PrintContext $context): string
 	{
+		[$escapingContext, $filter] = $this->adjustContext($context->getEscapingContext());
 		$context->addBlock($this->block);
 		$this->block->content = $this->content->print($context); // must be compiled after is added
-		$escapingContext = $this->adjustContext($context->getEscapingContext());
 
 		return $context->format(
-			'$this->addBlock($ʟ_nm = %word, %dump, [[$this, %dump]], %dump);
+			'$this->addBlock(%raw, %dump, [[$this, %dump]], %dump);
 			$this->renderBlock($ʟ_nm, get_defined_vars()'
-			. ($this->filter
+			. ($filter
 				? $context->format(
 					', function ($s, $type) { $ʟ_fi = new LR\FilterInfo($type); return %modifyContent($s); }',
-					$this->filter,
+					$filter,
 				)
 				: '')
 			. ');',
-			$this->block->name,
+			new AssignNode(new VariableNode('ʟ_nm'), $this->block->name),
 			implode('', $escapingContext),
 			$this->block->method,
 			$this->block->layer,
@@ -150,16 +153,22 @@ class BlockNode extends StatementNode
 	{
 		if (str_starts_with((string) $context[1], Context::HtmlAttribute)) {
 			$context[1] = null;
-			$this->filter .= '|escape';
+			$filter = FilterNode::escapeFilter($this->filter);
 		} elseif ($this->filter) {
-			$this->filter .= '|escape';
+			$filter = FilterNode::escapeFilter($this->filter);
 		}
-		return $context;
+		return [$context, $filter ?? null];
 	}
 
 
 	public function &getIterator(): \Generator
 	{
+		if ($this->block) {
+			yield $this->block->name;
+		}
+		if ($this->filter) {
+			yield $this->filter;
+		}
 		yield $this->content;
 	}
 }
