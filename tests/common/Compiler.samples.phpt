@@ -53,3 +53,8 @@ Assert::match(
 	'<div> <a> </a></div>', // </a> is accepted
 	$latte->renderToString('<div n:if="1"> {if true}<a>{/if} </a></div>'),
 );
+
+Assert::contains( // unpackSimpleArrayPass
+	'echo LR\Filters::escapeHtmlText($var)',
+	$latte->compile('{=[...[...$var]]}'),
+);

@@ -13,6 +13,7 @@ use Latte;
 use Latte\CompileException;
 use Latte\Compiler\Node;
 use Latte\Compiler\Nodes\AuxiliaryNode;
+use Latte\Compiler\Nodes\Php\Expression\ArrayNode;
 use Latte\Compiler\Nodes\Php\Expression\FunctionCallNode;
 use Latte\Compiler\Nodes\Php\Expression\PropertyFetchNode;
 use Latte\Compiler\Nodes\Php\Expression\VariableNode;
@@ -109,6 +110,19 @@ final class Passes
 				&& (str_starts_with($node->name, 'ʟ_'))
 			) {
 				throw new CompileException("Forbidden variable \$$node->name.", $node->startLine);
+			}
+		});
+	}
+
+
+	/**
+	 * Converts [...$var] -> $var, because PHP 8.0 doesn't support unpacking with arguments
+	 */
+	public static function unpackSimpleArrayPass(TemplateNode $node): void
+	{
+		(new NodeTraverser)->traverse($node, leave: function (Node $node) {
+			if ($node instanceof ArrayNode && count($node->items) === 1 && $node->items[0]?->unpack) {
+				return $node->items[0]->value;
 			}
 		});
 	}

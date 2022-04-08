@@ -186,6 +186,7 @@ final class CoreExtension extends Latte\Extension
 			[Passes::class, 'overwrittenVariablesPass'],
 			fn(TemplateNode $node) => Passes::customFunctionsPass($node, $this->functions),
 			[Passes::class, 'moveTemplatePrintToHeadPass'],
+			[Passes::class, 'unpackSimpleArrayPass'],
 		];
 	}
 
